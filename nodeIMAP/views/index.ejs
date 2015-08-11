@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        //https://www.google.com/settings/security/lesssecureapps
+        var login = document.getElementById('login'), readUnreadEmails, readPercent, unreadPercent;
+        login.addEventListener('click', function () {
+          var gmail = document.getElementById('myMail').value;
+          var pwd = document.getElementById('myPassword').value;
+          console.log(gmail);
+          console.log(pwd);
+          if(gmail && pwd) {
+            var getChartsPromise = new Promise(function (resolve, reject) {
+              var xhr = new XMLHttpRequest();
+              xhr.open('POST', '/');
+              xhr.setRequestHeader('Content-type', 'application/JSON');
+              xhr.addEventListener('readystatechange', function () {
+                if (xhr.readyState === 4) {
+                  if (xhr.status === 200) {
+                    //console.log('calling the resolve function ... ');
+                    resolve(xhr.response);
+                  } else {
+                    reject(xhr.statusText);
+                  }
+                }
+              });
+              xhr.send(JSON.stringify({email: gmail, password: pwd}));
+            });
+          }
+                getChartsPromise.then(function (response) {
+                  console.log(response);
+                  readUnreadEmails = JSON.parse(response);
+
+                  readPercent = (readUnreadEmails.read/(readUnreadEmails.read + readUnreadEmails.unread)) * 100;
+                  unreadPercent = (readUnreadEmails.unread/(readUnreadEmails.read + readUnreadEmails.unread)) * 100
+                  readUnreadPie(readPercent, unreadPercent);
+                  attachmentsPie(readUnreadEmails.emailsAttachments, readUnreadEmails.noattachments);
+                  //var mineTypeslength = readUnreadEmails.mimeTypes.length;
+                  mimeTypesPie(readUnreadEmails.mimeTypes);
+                }, function (error) {
+                  console.log(error);
+                });
+              });
+       function readUnreadPie(readPercent, unreadPercent){
+         $('#container1').highcharts({
+           chart: {
+             plotBackgroundColor: null,
+             plotBorderWidth: null,
+             plotShadow: false,
+             type: 'pie'
+           },
+           title: {
+             text: 'Gmail Account: Unread vs Read e-mails'
+           },
+           tooltip: {
+             pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+           },
+           plotOptions: {
+             pie: {
+               allowPointSelect: true,
+               cursor: 'pointer',
+               dataLabels: {
+                 enabled: true,
+                 format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                 style: {
+                   color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                 }
+               }
+             }
+           },
+           series: [{
+             name: "Emails",
+             colorByPoint: true,
+             data: [{
+               name: "Read",
+               y: readPercent
+             }, {
+               name: "Unread",
+               y: unreadPercent
+             }]
+           }]
+         });
+       }
+        function attachmentsPie(attachEmailCount, noAttachEmailCount){
+          $('#container2').highcharts({
+            chart: {
+              plotBackgroundColor: null,
+              plotBorderWidth: null,
+              plotShadow: false,
+              type: 'pie'
+            },
+            title: {
+              text: 'Gmail Account: e-mails with attachments vs without attachments'
+            },
+            tooltip: {
+              pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+            },
+            plotOptions: {
+              pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                  enabled: true,
+                  format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                  style: {
+                    color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                  }
+                }
+              }
+            },
+            series: [{
+              name: "Emails",
+              colorByPoint: true,
+              data: [{
+                name: "attachments",
+                y: attachEmailCount
+              }, {
+                name: "noattachments",
+                y: noAttachEmailCount
+              }]
+            }]
+          });
+        }
+        function mimeTypesPie(mimeTypes){
+         $('#container3').highcharts({
+         chart: {
+         plotBackgroundColor: null,
+         plotBorderWidth: null,
+         plotShadow: false,
+         type: 'pie'
+         },
+         title: {
+         text: 'Gmail Account: Mime Types of attachments and their count'
+         },
+         tooltip: {
+         pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+         },
+         plotOptions: {
+         pie: {
+         allowPointSelect: true,
+         cursor: 'pointer',
+         dataLabels: {
+         enabled: true,
+         format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+         style: {
+         color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+         }
+         }
+         }
+         },
+         series: [{
+         name: "Emails",
+         colorByPoint: true,
+           data: mimeTypes
+         }]
+         });
+         }
+      });
+    </script>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <div id="content">
+      <h2>Log in using Gmail</h2>
+        <input type="email" name="email" id="myMail" placeholder="Gmail"/>
+        <input type="password" name="password" id="myPassword" placeholder="password"/>
+        <button id="login">Login</button>
+    </div>
+    <div id="container1"></div>
+    <div id="container2"></div>
+    <div id="container3"></div>
+  </body>
+</html>
